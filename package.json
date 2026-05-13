@@ -1,0 +1,17 @@
+{
+  "name": "sn-triage-copilot",
+  "version": "1.0.0",
+  "description": "AI-powered IT triage assistant demonstrating RAG, failover, and structured output with ServiceNow",
+  "private": true,
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:ui\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:ui": "cd ui && npm run dev",
+    "install:all": "npm i && cd api && npm i && cd ../ui && npm i",
+    "test": "cd api && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

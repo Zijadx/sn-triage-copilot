@@ -1,0 +1,34 @@
+:root {
+  --bg:        #0a0c0f;
+  --bg-2:      #111418;
+  --bg-3:      #181c22;
+  --border:    #1e2530;
+  --text:      #c9d1d9;
+  --text-muted:#6e7f8d;
+  --accent:    #00c896;
+  --accent-dim:#005c44;
+  --warn:      #f0a500;
+  --danger:    #e05c5c;
+  --low:       #e05c5c;
+  --medium:    #f0a500;
+  --high:      #00c896;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+::selection { background: var(--accent-dim); color: var(--accent); }
