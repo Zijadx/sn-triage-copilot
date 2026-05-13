@@ -74,7 +74,7 @@ Each folder is a discrete, explainable module. The API server in `api/server.js`
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/automatiki/sn-triage-copilot.git
+git clone https://github.com/zijadx/sn-triage-copilot.git
 cd sn-triage-copilot
 npm run install:all
 ```
