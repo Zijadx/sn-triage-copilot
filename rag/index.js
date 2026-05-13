@@ -1,63 +1,60 @@
 /**
  * rag/index.js
  *
- * RAG (Retrieval-Augmented Generation) layer.
+ * RAG layer — embedding + semantic search.
  *
- * Responsibilities:
- *   1. Embed a query string using Anthropic's embedding endpoint
- *   2. Compare against an in-memory corpus of SN incident embeddings
- *   3. Return the top-K most similar incidents as context
- *
- * In production you'd swap the in-memory store for pgvector, Pinecone, etc.
- * The interface stays identical — that's the point of this abstraction.
+ * Uses a TF-IDF style local embedding for zero external dependencies.
+ * Swap embed() for OpenAI/Voyage/Cohere in production — interface unchanged.
  */
-
-const Anthropic = require('@anthropic-ai/sdk');
-
-const client = new Anthropic();
 
 // In-memory corpus: [{ id, text, embedding, metadata }]
 let corpus = [];
 
 /**
- * Cosine similarity between two vectors.
+ * Simple but effective local embedding using term frequency.
+ * Tokenizes text, builds a frequency vector over shared vocabulary.
+ * Good enough for demo-scale semantic search.
  */
-function cosineSimilarity(a, b) {
-  const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
-  const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-  const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-  return dot / (magA * magB);
+function tokenize(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 2);
 }
 
-/**
- * Embed a single text string.
- * Returns a float array.
- */
-async function embed(text) {
-  const response = await client.embeddings.create({
-    model: 'voyage-3',
-    input: text,
-    input_type: 'query',
-  });
-  return response.data[0].embedding;
+function embed(text) {
+  const tokens = tokenize(text);
+  const freq = {};
+  for (const t of tokens) freq[t] = (freq[t] || 0) + 1;
+  return freq;
+}
+
+function cosineSimilarity(a, b) {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  let dot = 0, magA = 0, magB = 0;
+  for (const k of keys) {
+    const va = a[k] || 0;
+    const vb = b[k] || 0;
+    dot += va * vb;
+    magA += va * va;
+    magB += vb * vb;
+  }
+  if (magA === 0 || magB === 0) return 0;
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
 
 /**
  * Seed the in-memory corpus from a list of SN incidents.
- * Call this at server startup after fetching resolved incidents.
- *
- * incidents: [{ sys_id, number, short_description, close_notes, ... }]
  */
 async function seedCorpus(incidents) {
   console.log(`[RAG] Seeding corpus with ${incidents.length} incidents...`);
-
-  const embedPromises = incidents.map(async (inc) => {
-    const text = `${inc.short_description}\n${inc.close_notes || ''}`.trim();
-    const embedding = await embed(text);
+  corpus = incidents.map(inc => {
+    const text = `${inc.short_description} ${inc.close_notes || ''}`.trim();
     return {
       id: inc.sys_id,
       text,
-      embedding,
+      embedding: embed(text),
       metadata: {
         number: inc.number,
         short_description: inc.short_description,
@@ -67,33 +64,29 @@ async function seedCorpus(incidents) {
       },
     };
   });
-
-  corpus = await Promise.all(embedPromises);
   console.log(`[RAG] Corpus ready. ${corpus.length} documents indexed.`);
 }
 
 /**
- * Retrieve the top-K most similar incidents for a given query.
- *
- * Returns: [{ score, metadata }]
+ * Retrieve top-K most similar incidents for a query.
  */
 async function retrieve(query) {
   const topK = parseInt(process.env.RAG_TOP_K || '5', 10);
-  const threshold = parseFloat(process.env.RAG_SIMILARITY_THRESHOLD || '0.75');
+  const threshold = parseFloat(process.env.RAG_SIMILARITY_THRESHOLD || '0.01');
 
   if (corpus.length === 0) {
-    console.warn('[RAG] Corpus is empty. Returning no results.');
+    console.warn('[RAG] Corpus is empty.');
     return [];
   }
 
-  const queryEmbedding = await embed(query);
+  const queryEmbedding = embed(query);
 
   const scored = corpus
-    .map((doc) => ({
+    .map(doc => ({
       score: cosineSimilarity(queryEmbedding, doc.embedding),
       metadata: doc.metadata,
     }))
-    .filter((r) => r.score >= threshold)
+    .filter(r => r.score >= threshold)
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
 
@@ -105,7 +98,6 @@ async function retrieve(query) {
  */
 function formatContext(results) {
   if (results.length === 0) return 'No similar past incidents found.';
-
   return results
     .map((r, i) => {
       const { number, short_description, close_notes, category, priority } = r.metadata;
