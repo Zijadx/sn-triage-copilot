@@ -21,15 +21,22 @@ const snClient = require('../sn-client');
 
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: 'http://localhost:5173' })); // Vite dev server
+app.use(cors({ origin: 'http://localhost:5173' }));
 
 // ─── Startup: seed the RAG corpus ────────────────────────────────────────────
 
 async function boot() {
   console.log('[Boot] Connecting to ServiceNow...');
   try {
-    const incidents = await snClient.getResolvedIncidents({ limit: 200 });
-    await rag.seedCorpus(incidents);
+    const [incidents, kbArticles] = await Promise.all([
+      snClient.getResolvedIncidents({ limit: 200 }),
+      snClient.getKBArticles({ limit: 200 }),
+    ]);
+
+    const corpus = [...incidents, ...kbArticles];
+    console.log(`[Boot] Fetched ${incidents.length} incidents + ${kbArticles.length} KB articles = ${corpus.length} total documents`);
+
+    await rag.seedCorpus(corpus);
     console.log('[Boot] RAG corpus ready.');
   } catch (err) {
     console.error('[Boot] Failed to seed RAG corpus:', err.message);
@@ -42,7 +49,6 @@ async function boot() {
 /**
  * POST /api/triage
  * Body: { query: string }
- * Returns the full triage result including model metadata.
  */
 app.post('/api/triage', async (req, res) => {
   const { query } = req.body;
@@ -54,16 +60,11 @@ app.post('/api/triage', async (req, res) => {
   const start = Date.now();
 
   try {
-    // 1. RAG — retrieve similar incidents
     const ragResults = await rag.retrieve(query);
     const ragContext = rag.formatContext(ragResults);
-
-    // 2. AI chain — triage with failover
     const aiResult = await triage(query, ragContext);
-
     const latencyMs = Date.now() - start;
 
-    // 3. Observability — log the request
     logRequest({
       query,
       modelUsed: aiResult.model_used,
@@ -101,7 +102,6 @@ app.post('/api/triage', async (req, res) => {
 
 /**
  * GET /api/logs
- * Returns recent triage log entries + aggregate stats.
  */
 app.get('/api/logs', (req, res) => {
   try {
@@ -115,20 +115,11 @@ app.get('/api/logs', (req, res) => {
 
 /**
  * GET /api/health
- * Checks SN connectivity and RAG corpus status.
  */
 app.get('/api/health', async (req, res) => {
   const checks = { api: true, servicenow: false, rag_corpus: false };
-
-  try {
-    checks.servicenow = await snClient.ping();
-  } catch (_) {}
-
-  try {
-    const test = await rag.retrieve('test connectivity');
-    checks.rag_corpus = true;
-  } catch (_) {}
-
+  try { checks.servicenow = await snClient.ping(); } catch (_) {}
+  try { await rag.retrieve('test'); checks.rag_corpus = true; } catch (_) {}
   const status = checks.servicenow && checks.rag_corpus ? 200 : 207;
   res.status(status).json(checks);
 });

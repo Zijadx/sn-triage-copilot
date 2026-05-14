@@ -28,19 +28,44 @@ class SNClient {
 
   /**
    * Fetch recent resolved incidents for RAG corpus seeding.
-   * Returns simplified records: sys_id, number, short_description,
-   * close_notes, category, priority.
+   * Filters: state=6 (Resolved) OR state=7 (Closed)
+   * Fields: sys_id, number, short_description, close_notes, category, priority
    */
   async getResolvedIncidents({ limit = 100 } = {}) {
     const response = await this.client.get('/table/incident', {
       params: {
-        sysparm_query: 'state=6^ORstate=7', // Resolved or Closed
+        sysparm_query: 'state=6^ORstate=7',
         sysparm_fields: 'sys_id,number,short_description,close_notes,category,priority',
         sysparm_limit: limit,
         sysparm_display_value: 'true',
       },
     });
-    return response.data.result;
+    return response.data.result.map(r => ({ ...r, _source: 'incident' }));
+  }
+
+  /**
+   * Fetch published KB articles for RAG corpus seeding.
+   * Filters: workflow_state=published, active=true
+   * Fields: sys_id, number, short_description, text, kb_category
+   */
+  async getKBArticles({ limit = 100 } = {}) {
+    const response = await this.client.get('/table/kb_knowledge', {
+      params: {
+        sysparm_query: 'workflow_state=published^active=true',
+        sysparm_fields: 'sys_id,number,short_description,text,kb_category',
+        sysparm_limit: limit,
+        sysparm_display_value: 'true',
+      },
+    });
+    return response.data.result.map(r => ({
+      sys_id: r.sys_id,
+      number: r.number,
+      short_description: r.short_description,
+      close_notes: r.text,       // normalize to same field name as incidents
+      category: r.kb_category,
+      priority: null,
+      _source: 'kb_article',
+    }));
   }
 
   /**
