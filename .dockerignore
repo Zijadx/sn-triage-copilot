@@ -1,0 +1,8 @@
+.env
+.env.*
+node_modules
+**/node_modules
+ui/
+.git
+*.log
+triage_log.sqlite
