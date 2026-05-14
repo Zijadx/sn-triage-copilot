@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy root package.json and install concurrently
+# Copy and install root dependencies (shared modules like @anthropic-ai/sdk)
 COPY package.json ./
 RUN npm install
 
@@ -17,7 +17,6 @@ COPY scripts/ ./scripts/
 # Install API dependencies
 RUN cd api && npm install
 
-# Secrets injected at runtime via environment variables — never baked in
 ENV NODE_ENV=production
 ENV PORT=3001
 
