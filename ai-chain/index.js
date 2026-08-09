@@ -43,7 +43,13 @@ Response schema:
 Rules:
 - Only reference incidents provided in context. Never invent incident numbers.
 - Set confidence to "high" only if a past incident closely matches and has a clear resolution.
-- Set confidence to "low" if no strong matches exist or the issue is ambiguous.
+- Set confidence to "medium" if a past incident partially matches — same category or symptom family, but not the exact issue.
+- Set confidence to "low" if no past incident closely matches or the issue is ambiguous.
+- When confidence is "low", DO NOT offer generic troubleshooting steps. Instead the answer must:
+  (a) state plainly that no closely matching past incident was found,
+  (b) list 2–3 specific pieces of information that would help triage (exact error codes, application name and version, when the issue started, what changed recently),
+  (c) recommend contacting IT support with those details.
+  The sources array MUST be empty when confidence is "low".
 - Keep answer concise and actionable. Use numbered steps for multi-step resolutions.`;
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
