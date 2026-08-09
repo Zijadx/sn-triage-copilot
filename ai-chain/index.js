@@ -48,6 +48,18 @@ Rules:
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/**
+ * Strip a ```json ... ``` (or plain ``` ... ```) code fence if the model
+ * wrapped its response in one. Modern Claude models tend to add markdown
+ * formatting even when told not to; being lenient on the parser side is
+ * cheaper than fighting the prompt.
+ */
+function extractJson(raw) {
+  const trimmed = raw.trim();
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  return fenceMatch ? fenceMatch[1].trim() : trimmed;
+}
+
 class SchemaValidationError extends Error {
   constructor(reason) {
     super(`Response failed schema validation: ${reason}`);
@@ -86,8 +98,8 @@ async function callModel(model, userMessage, attempt = 1) {
       ),
     ]);
 
-    const raw = response.content[0].text.trim();
-    const parsed = JSON.parse(raw);
+    const raw = response.content[0].text;
+    const parsed = JSON.parse(extractJson(raw));
     return validateSchema(parsed);
 
   } catch (err) {
