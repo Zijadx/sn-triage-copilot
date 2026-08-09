@@ -3,16 +3,18 @@
  *
  * Express server — the orchestration layer.
  * Imports RAG, AI chain, observability, and SN client.
- * Exposes three endpoints:
- *   POST /api/triage   — main triage flow
- *   GET  /api/logs     — recent request log
- *   GET  /api/health   — connectivity check
+ *
+ * Endpoints:
+ *   POST /api/triage   — main triage flow (auth + rate-limited)
+ *   GET  /api/logs     — recent request log (auth)
+ *   GET  /api/health   — connectivity check (open, for load balancers)
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const rag = require('../rag');
 const { triage } = require('../ai-chain');
@@ -20,8 +22,42 @@ const { logRequest, getRecentLogs, getStats } = require('../observability');
 const snClient = require('../sn-client');
 
 const app = express();
-app.use(express.json());
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.set('trust proxy', 1);
+app.use(express.json({ limit: '10kb' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+const API_TOKEN = process.env.API_TOKEN;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+if (!API_TOKEN) {
+  if (NODE_ENV === 'production') {
+    console.error('[Boot] API_TOKEN is required when NODE_ENV=production. Refusing to start.');
+    process.exit(1);
+  }
+  console.warn('[Boot] API_TOKEN not set — auth is DISABLED. Do not run this way outside local dev.');
+}
+
+function requireAuth(req, res, next) {
+  if (!API_TOKEN) return next();
+  const header = req.get('authorization') || '';
+  const [scheme, token] = header.split(' ');
+  if (scheme !== 'Bearer' || token !== API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+// ─── Rate limiting ───────────────────────────────────────────────────────────
+
+const triageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: parseInt(process.env.TRIAGE_RATE_LIMIT || '20', 10),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many triage requests. Please slow down.' },
+});
 
 // ─── Startup: seed the RAG corpus ────────────────────────────────────────────
 
@@ -46,15 +82,14 @@ async function boot() {
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
-/**
- * POST /api/triage
- * Body: { query: string }
- */
-app.post('/api/triage', async (req, res) => {
+app.post('/api/triage', requireAuth, triageLimiter, async (req, res) => {
   const { query } = req.body;
 
   if (!query || typeof query !== 'string' || query.trim().length === 0) {
     return res.status(400).json({ error: 'query is required' });
+  }
+  if (query.length > 4000) {
+    return res.status(400).json({ error: 'query too long (max 4000 chars)' });
   }
 
   const start = Date.now();
@@ -100,10 +135,7 @@ app.post('/api/triage', async (req, res) => {
   }
 });
 
-/**
- * GET /api/logs
- */
-app.get('/api/logs', (req, res) => {
+app.get('/api/logs', requireAuth, (req, res) => {
   try {
     const logs = getRecentLogs(50);
     const stats = getStats();
@@ -113,9 +145,6 @@ app.get('/api/logs', (req, res) => {
   }
 });
 
-/**
- * GET /api/health
- */
 app.get('/api/health', async (req, res) => {
   const checks = { api: true, servicenow: false, rag_corpus: false };
   try { checks.servicenow = await snClient.ping(); } catch (_) {}
