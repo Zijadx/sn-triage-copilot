@@ -1,0 +1,77 @@
+[
+  {
+    "query": "VPN error 691 on my Windows laptop, works fine on other machines",
+    "expected": ["inc_vpn_691"],
+    "note": "direct vocabulary overlap"
+  },
+  {
+    "query": "GlobalProtect wont connect, says the certificate is invalid",
+    "expected": ["inc_vpn_certificate"],
+    "note": "direct match"
+  },
+  {
+    "query": "I got a new phone and now I cannot get past two factor auth",
+    "expected": ["inc_mfa_lost_phone"],
+    "note": "paraphrase: MFA vs two factor auth"
+  },
+  {
+    "query": "Authenticator codes keep saying wrong even though I type them fast",
+    "expected": ["inc_mfa_time_drift"],
+    "note": "paraphrase"
+  },
+  {
+    "query": "Outlook is stuck offline and I clicked work online but nothing happens",
+    "expected": ["inc_outlook_offline"],
+    "note": "direct"
+  },
+  {
+    "query": "My manager shared her calendar with me but I still cannot see it",
+    "expected": ["inc_outlook_shared_calendar"],
+    "note": "paraphrase: shared calendar permission"
+  },
+  {
+    "query": "Printer wont print even though it is turned on and on the network",
+    "expected": ["inc_printer_offline"],
+    "note": "direct"
+  },
+  {
+    "query": "HP printer is spitting out pages of random symbols",
+    "expected": ["inc_printer_driver"],
+    "note": "paraphrase: garbled output"
+  },
+  {
+    "query": "My laptop takes forever to log in every morning",
+    "expected": ["inc_laptop_slow_boot"],
+    "note": "paraphrase: slow boot"
+  },
+  {
+    "query": "Dell laptop keeps blue screening with DPC watchdog error",
+    "expected": ["inc_laptop_blue_screen"],
+    "note": "direct"
+  },
+  {
+    "query": "Slack does not ping me when I get a message on my Mac",
+    "expected": ["inc_slack_notifications"],
+    "note": "paraphrase: notifications"
+  },
+  {
+    "query": "git push says permission denied publickey to github",
+    "expected": ["inc_github_ssh"],
+    "note": "direct"
+  },
+  {
+    "query": "Cannot join the office wifi, authentication keeps failing",
+    "expected": ["inc_wifi_corporate"],
+    "note": "direct"
+  },
+  {
+    "query": "Citrix desktop just shows a black screen after I sign in",
+    "expected": ["inc_vdi_black_screen"],
+    "note": "direct"
+  },
+  {
+    "query": "Windows server ran out of disk space and stuff is crashing",
+    "expected": ["inc_disk_full"],
+    "note": "paraphrase: server C drive full"
+  }
+]

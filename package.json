@@ -9,7 +9,8 @@
     "dev:api": "cd api && npm run dev",
     "dev:ui": "cd ui && npm run dev",
     "install:all": "npm i && cd api && npm i && cd ../ui && npm i",
-    "test": "cd api && npm test"
+    "test": "cd api && npm test",
+    "eval": "node evals/run.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

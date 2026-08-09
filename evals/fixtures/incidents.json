@@ -1,0 +1,122 @@
+[
+  {
+    "sys_id": "inc_vpn_691",
+    "number": "INC0010001",
+    "short_description": "VPN connection fails with error 691 on Windows",
+    "close_notes": "User's cached AD credentials were stale after password rotation. Signed out, cleared Windows Credential Manager entries for the VPN host, signed back in with new password. Connection restored.",
+    "category": "Network",
+    "priority": "3"
+  },
+  {
+    "sys_id": "inc_vpn_certificate",
+    "number": "INC0010002",
+    "short_description": "GlobalProtect VPN client rejects server certificate",
+    "close_notes": "Root CA was missing from the machine trust store after imaging. Pushed corporate root cert via SCCM. VPN handshake succeeded on retry.",
+    "category": "Network",
+    "priority": "3"
+  },
+  {
+    "sys_id": "inc_mfa_lost_phone",
+    "number": "INC0010003",
+    "short_description": "User cannot log in after replacing mobile phone, MFA token gone",
+    "close_notes": "Verified identity via manager, reset MFA enrollment in Okta admin, walked user through re-enrolling authenticator app on new device.",
+    "category": "Identity",
+    "priority": "2"
+  },
+  {
+    "sys_id": "inc_mfa_time_drift",
+    "number": "INC0010004",
+    "short_description": "MFA codes rejected as invalid despite entering correctly",
+    "close_notes": "Phone system clock had drifted more than 60 seconds. Enabled automatic time on device, TOTP codes accepted immediately.",
+    "category": "Identity",
+    "priority": "3"
+  },
+  {
+    "sys_id": "inc_outlook_offline",
+    "number": "INC0010005",
+    "short_description": "Outlook stuck in Working Offline mode, will not reconnect",
+    "close_notes": "Outlook cached mode profile corrupted. Rebuilt OST file, disabled and re-enabled Cached Exchange Mode. Mail flow resumed.",
+    "category": "Email",
+    "priority": "3"
+  },
+  {
+    "sys_id": "inc_outlook_shared_calendar",
+    "number": "INC0010006",
+    "short_description": "Shared calendar not visible in Outlook after permission grant",
+    "close_notes": "Calendar cache in Outlook did not refresh. Removed the shared calendar, waited 15 minutes for AD replication, re-added it. Events appeared.",
+    "category": "Email",
+    "priority": "4"
+  },
+  {
+    "sys_id": "inc_printer_offline",
+    "number": "INC0010007",
+    "short_description": "Network printer shows offline in Windows despite being powered on",
+    "close_notes": "Print spooler service had hung. Restarted Print Spooler, cleared queue, printer came back online without needing driver reinstall.",
+    "category": "Peripherals",
+    "priority": "4"
+  },
+  {
+    "sys_id": "inc_printer_driver",
+    "number": "INC0010008",
+    "short_description": "Printing produces garbled output on HP LaserJet",
+    "close_notes": "Wrong universal print driver installed. Removed driver, installed the model-specific PCL6 driver from HP support site. Test page printed correctly.",
+    "category": "Peripherals",
+    "priority": "4"
+  },
+  {
+    "sys_id": "inc_laptop_slow_boot",
+    "number": "INC0010009",
+    "short_description": "Laptop takes over 10 minutes to reach desktop after login",
+    "close_notes": "Roaming profile size exceeded 2GB due to large OneDrive cache. Excluded OneDrive from roaming profile sync, capped profile at 500MB. Login time under 90 seconds.",
+    "category": "Endpoint",
+    "priority": "3"
+  },
+  {
+    "sys_id": "inc_laptop_blue_screen",
+    "number": "INC0010010",
+    "short_description": "Recurring BSOD on Dell laptop, DPC_WATCHDOG_VIOLATION",
+    "close_notes": "Intel storage driver was outdated and incompatible with recent Windows update. Updated Intel RST driver via Dell Command Update. No further crashes over 7 days.",
+    "category": "Endpoint",
+    "priority": "2"
+  },
+  {
+    "sys_id": "inc_slack_notifications",
+    "number": "INC0010011",
+    "short_description": "Slack desktop app not showing notifications on macOS",
+    "close_notes": "macOS notification permissions revoked after OS upgrade. Opened System Settings > Notifications, re-enabled alerts for Slack, toggled Do Not Disturb off. Notifications restored.",
+    "category": "Collaboration",
+    "priority": "4"
+  },
+  {
+    "sys_id": "inc_github_ssh",
+    "number": "INC0010012",
+    "short_description": "Cannot push to GitHub, permission denied publickey",
+    "close_notes": "SSH agent was not running and key was not loaded. Started ssh-agent, added key with ssh-add, verified with ssh -T git@github.com. Push succeeded.",
+    "category": "DevTools",
+    "priority": "3"
+  },
+  {
+    "sys_id": "inc_wifi_corporate",
+    "number": "INC0010013",
+    "short_description": "Laptop cannot connect to corporate wifi, authentication failed",
+    "close_notes": "802.1X profile pushed by GPO conflicted with a manually saved profile. Deleted the manual profile, forced a group policy update, reconnected using the managed profile.",
+    "category": "Network",
+    "priority": "3"
+  },
+  {
+    "sys_id": "inc_vdi_black_screen",
+    "number": "INC0010014",
+    "short_description": "Citrix VDI session shows black screen after login",
+    "close_notes": "GPU driver mismatch on the VDI host after a maintenance window. Rebooted the affected VDA server, session redirected to a healthy host and rendered normally.",
+    "category": "Virtualization",
+    "priority": "2"
+  },
+  {
+    "sys_id": "inc_disk_full",
+    "number": "INC0010015",
+    "short_description": "Application server C drive at 100 percent, services crashing",
+    "close_notes": "Old IIS log files consuming 40GB in C:\\inetpub\\logs. Enabled log rotation policy, archived old logs to secondary volume, freed 38GB. Services restarted cleanly.",
+    "category": "Server",
+    "priority": "1"
+  }
+]
